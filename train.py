@@ -106,6 +106,7 @@ if __name__ == "__main__":
         x_train, y_train = utils.convert_to_tensor(x_train, y_train)
         m = ACGANgp(args.latent_dim, args.label_dim, x_train.shape[1:], args.lambda_, args.k,
                     summary_writer=summary_writer)
+        logger = init_logger(model_name, date_str, m)
         traingp(m, x_train, y_train)
     else:
         raise ValueError("model name error")
