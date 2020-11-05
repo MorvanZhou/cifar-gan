@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 import numpy as np
-from cnn import resnet_g2 as g_net, dc_d as d_net
+from cnn import resnet_g, dc_g, dc_d
 
 
 class ACGAN(keras.Model):
@@ -9,17 +9,18 @@ class ACGAN(keras.Model):
     discriminator 图片 预测 真假+标签
     generator 标签 生成 图片
     """
-    def __init__(self, latent_dim, label_dim, img_shape, a=-1, b=1, c=1, summary_writer=None):
+    def __init__(self, latent_dim, label_dim, img_shape, a=-1, b=1, c=1, summary_writer=None, lr=0.0002, beta1=0.5, beta2=0.999, net="dcnet"):
         super().__init__()
         self.latent_dim = latent_dim
         self.label_dim = label_dim
         self.img_shape = img_shape
         self.a, self.b, self.c = a, b, c
+        self.net_name = net
 
         self.g = self._get_generator()
         self.d = self._get_discriminator()
 
-        self.opt = keras.optimizers.Adam(0.0002, beta_1=0.5)
+        self.opt = keras.optimizers.Adam(lr, beta_1=beta1, beta_2=beta2)
         self.loss_mse = keras.losses.MeanSquaredError(reduction="none")
         self.loss_class = keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction="none")
 
@@ -33,9 +34,10 @@ class ACGAN(keras.Model):
         return self.g.call([noise, target_labels], training=training)
 
     def _get_discriminator(self):
+        net = dc_d(self.img_shape, use_bn=True)
         img = keras.Input(shape=self.img_shape)
         s = keras.Sequential([
-            d_net(self.img_shape, use_bn=True),
+            net,
             keras.layers.Dense(1+self.label_dim, kernel_initializer=keras.initializers.RandomNormal(stddev=0.02)),
         ], name="s")
         o = s(img)
@@ -49,7 +51,8 @@ class ACGAN(keras.Model):
         label = keras.Input(shape=(), dtype=tf.int32)
         label_onehot = tf.one_hot(label, depth=self.label_dim)
         model_in = tf.concat((noise, label_onehot), axis=1)
-        s = g_net((self.latent_dim+self.label_dim,))
+        net = dc_g if self.net_name == "dcnet" else resnet_g
+        s = net((self.latent_dim+self.label_dim,))
         o = s(model_in)
         model = keras.Model([noise, label], o, name="generator")
         model.summary()
@@ -68,6 +71,7 @@ class ACGAN(keras.Model):
             with self.summary_writer.as_default():
                 tf.summary.scalar("d_mse", tf.reduce_mean(loss_mse), step=self._train_step)
                 tf.summary.scalar("d_crossentropy", tf.reduce_mean(loss_class), step=self._train_step)
+                tf.summary.histogram("g/last_grad", grads[-1], step=self._train_step)
         return loss
 
     def train_g(self, random_img_label):
@@ -85,6 +89,7 @@ class ACGAN(keras.Model):
             with self.summary_writer.as_default():
                 tf.summary.scalar("g_mse", tf.reduce_mean(loss_mse), step=self._train_step)
                 tf.summary.scalar("g_crossentropy", tf.reduce_mean(loss_class), step=self._train_step)
+                tf.summary.histogram("g/first_grad", grads[0], step=self._train_step)
                 if self._train_step % 1000 == 0:
                     tf.summary.image("g_img", (g_img + 1) / 2, max_outputs=5, step=self._train_step)
         self._train_step += 1

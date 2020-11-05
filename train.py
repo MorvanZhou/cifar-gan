@@ -12,14 +12,17 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--model", dest="model", default="acgangp")
-parser.add_argument("-z", "--latent_dim", dest="latent_dim", default=100, type=int)
+parser.add_argument("-z", "--latent_dim", dest="latent_dim", default=128, type=int)
 parser.add_argument("-l", "--label_dim", dest="label_dim", default=10, type=int)
-parser.add_argument("-b", "--batch_size", dest="batch_size", default=128, type=int)
+parser.add_argument("-b", "--batch_size", dest="batch_size", default=64, type=int)
 parser.add_argument("-e", "--epoch", dest="epoch", default=201, type=int)
 parser.add_argument("--soft_gpu", dest="soft_gpu", action="store_true", default=True)
-parser.add_argument("--lambda", dest="lambda_", default=10, type=int)
+parser.add_argument("--lambda", dest="lambda_", default=10, type=float)
 parser.add_argument("--d_loop", dest="d_loop", default=1, type=int)
-parser.add_argument("-k", dest="k", default=1, type=int)
+parser.add_argument("-lr", "--learning_rate", dest="lr", default=0.0002, type=float)
+parser.add_argument("-b1", "--beta1", dest="beta1", default=0., type=float)
+parser.add_argument("-b2", "--beta2", dest="beta2", default=0.9, type=float)
+parser.add_argument("--net", dest="net", default="dcnet", type=str, help="dcnet or resnet")
 
 args = parser.parse_args()
 
@@ -27,7 +30,7 @@ date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def train(gan, ds):
-    _dir = "model/{}/{}".format(model_name, date_str)
+    _dir = "visual/{}/{}/model".format(model_name, date_str)
     checkpoint_path = _dir + "/cp-{epoch:04d}.ckpt"
     os.makedirs(_dir, exist_ok=True)
     t0 = time.time()
@@ -48,18 +51,18 @@ def train(gan, ds):
 
 def traingp(gan, x, y):
     steps = len(x) // args.batch_size
-    _dir = "model/{}/{}".format(model_name, date_str)
+    _dir = "visual/{}/{}/model".format(model_name, date_str)
     checkpoint_path = _dir + "/cp-{epoch:04d}.ckpt"
     os.makedirs(_dir, exist_ok=True)
     t0 = time.time()
     for ep in range(args.epoch):
         for t in range(steps):
+            g_loss = gan.train_g(args.batch_size)
             for _ in range(args.d_loop):
                 idx = np.random.randint(0, len(x), args.batch_size)
                 img = tf.gather(x, idx)
                 label = tf.gather(y, idx)
                 w_loss, gp_loss, class_loss = gan.train_d(img, label)
-            g_loss = gan.train_g(args.batch_size)
 
         if ep % 5 == 0:
             utils.save_gan(gan, "%s/ep-%03d" % (date_str, ep))
@@ -99,13 +102,14 @@ if __name__ == "__main__":
     summary_writer = tf.summary.create_file_writer('visual/{}/{}'.format(model_name, date_str))
     if model_name == "acgan":
         d = utils.get_ds(args.batch_size // 2, x_train, y_train)
-        m = ACGAN(args.latent_dim, args.label_dim, x_train.shape[1:], summary_writer)
+        m = ACGAN(args.latent_dim, args.label_dim, x_train.shape[1:],
+                  summary_writer, lr=args.lr, beta1=args.beta1, beta2=args.beta2, net=args.net)
         logger = init_logger(model_name, date_str, m)
         train(m, d)
     elif model_name == "acgangp":
         x_train, y_train = utils.convert_to_tensor(x_train, y_train)
-        m = ACGANgp(args.latent_dim, args.label_dim, x_train.shape[1:], args.lambda_, args.k,
-                    summary_writer=summary_writer)
+        m = ACGANgp(args.latent_dim, args.label_dim, x_train.shape[1:], args.lambda_,
+                    summary_writer=summary_writer, lr=args.lr, beta1=args.beta1, beta2=args.beta2, net=args.net)
         logger = init_logger(model_name, date_str, m)
         traingp(m, x_train, y_train)
     else:
