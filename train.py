@@ -102,8 +102,8 @@ if __name__ == "__main__":
     summary_writer = tf.summary.create_file_writer('visual/{}/{}'.format(model_name, date_str))
     if model_name == "acgan":
         d = utils.get_ds(args.batch_size // 2, x_train, y_train)
-        m = ACGAN(args.latent_dim, args.label_dim, x_train.shape[1:],
-                  summary_writer, lr=args.lr, beta1=args.beta1, beta2=args.beta2, net=args.net)
+        m = ACGAN(args.latent_dim, args.label_dim, x_train.shape[1:], a=-1, b=1, c=1,
+                  summary_writer=summary_writer, lr=args.lr, beta1=args.beta1, beta2=args.beta2, net=args.net)
         logger = init_logger(model_name, date_str, m)
         train(m, d)
     elif model_name == "acgangp":

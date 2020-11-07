@@ -69,8 +69,8 @@ class ACGAN(keras.Model):
 
         if self._train_step % 300 == 0 and self.summary_writer is not None:
             with self.summary_writer.as_default():
-                tf.summary.scalar("d_mse", tf.reduce_mean(loss_mse), step=self._train_step)
-                tf.summary.scalar("d_crossentropy", tf.reduce_mean(loss_class), step=self._train_step)
+                tf.summary.scalar("d/mse", tf.reduce_mean(loss_mse), step=self._train_step)
+                tf.summary.scalar("d/crossentropy", tf.reduce_mean(loss_class), step=self._train_step)
                 tf.summary.histogram("g/last_grad", grads[-1], step=self._train_step)
         return loss
 
@@ -87,11 +87,11 @@ class ACGAN(keras.Model):
 
         if self._train_step % 300 == 0 and self.summary_writer is not None:
             with self.summary_writer.as_default():
-                tf.summary.scalar("g_mse", tf.reduce_mean(loss_mse), step=self._train_step)
-                tf.summary.scalar("g_crossentropy", tf.reduce_mean(loss_class), step=self._train_step)
+                tf.summary.scalar("g/mse", tf.reduce_mean(loss_mse), step=self._train_step)
+                tf.summary.scalar("g/crossentropy", tf.reduce_mean(loss_class), step=self._train_step)
                 tf.summary.histogram("g/first_grad", grads[0], step=self._train_step)
                 if self._train_step % 1000 == 0:
-                    tf.summary.image("g_img", (g_img + 1) / 2, max_outputs=5, step=self._train_step)
+                    tf.summary.image("g/img", (g_img + 1) / 2, max_outputs=5, step=self._train_step)
         self._train_step += 1
         return loss, g_img
 
