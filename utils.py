@@ -17,7 +17,7 @@ def set_soft_gpu(soft_gpu):
             print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
 
 
-def save_gan(model, ep, show_label=False, output_dir="./visual"):
+def save_gan(model, ep, output_dir="./visual", show_label=False):
     model_name = model.__class__.__name__.lower()
     img_label = np.arange(0, 10).astype(np.int32).repeat(10, axis=0)
     imgs = model.call(img_label, training=False)
