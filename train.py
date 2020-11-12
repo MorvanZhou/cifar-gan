@@ -22,15 +22,30 @@ parser.add_argument("--d_loop", dest="d_loop", default=1, type=int)
 parser.add_argument("-lr", "--learning_rate", dest="lr", default=0.0002, type=float)
 parser.add_argument("-b1", "--beta1", dest="beta1", default=0., type=float)
 parser.add_argument("-b2", "--beta2", dest="beta2", default=0.9, type=float)
-parser.add_argument("--net", dest="net", default="dcnet", type=str, help="dcnet or resnet")
+parser.add_argument("--net", dest="net", default="resnet", type=str, help="dcnet or resnet")
+parser.add_argument("--output_dir", dest="output_dir", type=str, default="./visual")
 
-args = parser.parse_args()
+args = parser.parse_args([
+    "--model", "acgangp",
+    "--latent_dim", "256",
+    "--label_dim", "10",
+    "--batch_size", "64",
+    "--epoch", "201",
+    "--soft_gpu",
+    "--lambda", "10",
+    "--d_loop", "1",
+    "-lr", "0.0002",
+    "--beta1", "0",
+    "--beta2", "0.9",
+    "--net", "resnet",
+    "--output_dir", "./visual",
+])
 
 date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def train(gan, ds):
-    _dir = "visual/{}/{}/model".format(model_name, date_str)
+    _dir = "{}/{}/{}/model".format(args.output_dir, model_name, date_str)
     checkpoint_path = _dir + "/cp-{epoch:04d}.ckpt"
     os.makedirs(_dir, exist_ok=True)
     t0 = time.time()
@@ -39,7 +54,7 @@ def train(gan, ds):
             d_loss, g_loss = gan.step(real_img, real_img_label)
 
         if ep % 5 == 0:
-            utils.save_gan(gan, "%s/ep-%03d" % (date_str, ep))
+            utils.save_gan(gan, "%s/ep-%03d" % (date_str, ep), args.output_dir)
         t1 = time.time()
         logger.info("ep={:03d} | time={:05.1f} | d_loss={:.2f} | g_loss={:.2f}".format(
             ep, t1 - t0, d_loss.numpy(), g_loss.numpy()))
@@ -51,7 +66,7 @@ def train(gan, ds):
 
 def traingp(gan, x, y):
     steps = len(x) // args.batch_size
-    _dir = "visual/{}/{}/model".format(model_name, date_str)
+    _dir = "{}/{}/{}/model".format(args.output_dir, model_name, date_str)
     checkpoint_path = _dir + "/cp-{epoch:04d}.ckpt"
     os.makedirs(_dir, exist_ok=True)
     t0 = time.time()
@@ -65,7 +80,7 @@ def traingp(gan, x, y):
                 w_loss, gp_loss, class_loss = gan.train_d(img, label)
 
         if ep % 5 == 0:
-            utils.save_gan(gan, "%s/ep-%03d" % (date_str, ep))
+            utils.save_gan(gan, "%s/ep-%03d" % (date_str, ep), args.output_dir)
         t1 = time.time()
         logger.info("ep={:03d} | time={:05.1f} | w_loss={:.2f} | gp={:.2f} | class={:.2f} | g_loss={:.2f}".format(
             ep, t1-t0, w_loss.numpy(), gp_loss.numpy(), class_loss.numpy(), g_loss.numpy()))
@@ -84,11 +99,11 @@ def init_logger(model_name, date_str, m):
 
     try:
         tf.keras.utils.plot_model(m.g, show_shapes=True, expand_nested=True, dpi=150,
-                                  to_file="visual/{}/{}/net_g.png".format(model_name, date_str))
+                                  to_file="{}/{}/{}/net_g.png".format(args.output_dir, model_name, date_str))
         tf.keras.utils.plot_model(m.d, show_shapes=True, expand_nested=True, dpi=150,
-                                  to_file="visual/{}/{}/net_d.png".format(model_name, date_str))
-    except Exception:
-        pass
+                                  to_file="{}/{}/{}/net_d.png".format(args.output_dir, model_name, date_str))
+    except Exception as e:
+        print(e)
     return logger
 
 
@@ -99,7 +114,7 @@ if __name__ == "__main__":
     print("x_shape:", x_train.shape, " x_type:", x_train.dtype,
           " y_shape:", y_train.shape, " y_type:", y_train.dtype)
     model_name = args.model
-    summary_writer = tf.summary.create_file_writer('visual/{}/{}'.format(model_name, date_str))
+    summary_writer = tf.summary.create_file_writer('{}/{}/{}'.format(args.output_dir, model_name, date_str))
     if model_name == "acgan":
         d = utils.get_ds(args.batch_size // 2, x_train, y_train)
         m = ACGAN(args.latent_dim, args.label_dim, x_train.shape[1:], a=-1, b=1, c=1,

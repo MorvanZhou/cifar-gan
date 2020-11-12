@@ -17,10 +17,10 @@ def set_soft_gpu(soft_gpu):
             print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
 
 
-def save_gan(model, ep, show_label=False):
+def save_gan(model, ep, show_label=False, output_dir="./visual"):
     model_name = model.__class__.__name__.lower()
     img_label = np.arange(0, 10).astype(np.int32).repeat(10, axis=0)
-    imgs = model.predict(img_label)
+    imgs = model.call(img_label, training=False)
 
     imgs = (imgs + 1) / 2
     plt.clf()
@@ -35,7 +35,7 @@ def save_gan(model, ep, show_label=False):
             if show_label:
                 plt.text(25, 25, int(r), fontsize=23)
     plt.tight_layout()
-    path = "visual/{}/{}.png".format(model_name, ep)
+    path = "{}/{}/{}.png".format(output_dir, model_name, ep)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     plt.savefig(path)
 
