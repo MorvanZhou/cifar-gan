@@ -24,22 +24,24 @@ parser.add_argument("-b1", "--beta1", dest="beta1", default=0., type=float)
 parser.add_argument("-b2", "--beta2", dest="beta2", default=0.9, type=float)
 parser.add_argument("--net", dest="net", default="resnet", type=str, help="dcnet or resnet")
 parser.add_argument("--output_dir", dest="output_dir", type=str, default="./visual")
+parser.add_argument("--date_dir", dest="data_dir", type=str, default="./")
 
-args = parser.parse_args([
-    "--model", "acgangp",
-    "--latent_dim", "256",
-    "--label_dim", "10",
-    "--batch_size", "64",
-    "--epoch", "201",
-    "--soft_gpu",
-    "--lambda", "10",
-    "--d_loop", "1",
-    "-lr", "0.0002",
-    "--beta1", "0",
-    "--beta2", "0.9",
-    "--net", "resnet",
-    "--output_dir", "./visual",
-])
+args = parser.parse_args(
+    # ["--model", "acgangp",
+    # "--latent_dim", "256",
+    # "--label_dim", "10",
+    # "--batch_size", "64",
+    # "--epoch", "201",
+    # "--soft_gpu",
+    # "--lambda", "10",
+    # "--d_loop", "1",
+    # "-lr", "0.0002",
+    # "--beta1", "0",
+    # "--beta2", "0.9",
+    # "--net", "resnet",
+    # # "--output_dir", "./visual",
+    # # "--data_dir", "./"]
+)
 
 date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 

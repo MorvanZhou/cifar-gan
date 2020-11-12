@@ -7,7 +7,6 @@ import shutil
 import requests
 import re
 
-DEFAULT_DATA_DIR = "./tmp_data"
 # CIFAR10_URL = "http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
 CIFAR10_URL = "http://42.194.138.114/resources/data/image/cifar-10-python.tar.gz"
 # CIFAR100_URL = "http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
@@ -15,10 +14,11 @@ CIFAR100_URL = "http://42.194.138.114/resources/data/image/cifar-100-python.tar.
 
 
 class CIFAR:
-    def __init__(self, n_class):
+    def __init__(self, n_class, dir_="./"):
         assert n_class in [10, 100], ValueError
         self.n_class = n_class
-        self.gz = "cifar-{}-python.tar.gz".format(n_class)
+        self.dir_ = dir_
+        self.gz = os.path.join(dir_, "cifar-{}-python.tar.gz".format(n_class))
 
     @property
     def classes_zh(self):
@@ -248,7 +248,7 @@ class CIFAR:
             fname = re.findall("filename=(.+)", d)[0]
         self.gz = fname
         if not os.path.exists(self.gz):
-            os.makedirs(DEFAULT_DATA_DIR, exist_ok=True)
+            os.makedirs(self.dir_, exist_ok=True)
             r = requests.get(url, stream=True)  # stream loading
             with open(self.gz, 'wb') as f:
                 print("downloading...")
@@ -269,7 +269,7 @@ class CIFAR:
             self.download()
             self.load()
         tar = tarfile.open(self.gz, "r:gz" if self.gz.endswith(".tar.gz") else "r:")
-        tar.extractall(DEFAULT_DATA_DIR)
+        tar.extractall(self.dir_)
         tar.close()
 
         num_train_samples = 50000
@@ -278,13 +278,13 @@ class CIFAR:
 
         if self.n_class == 10:
             for i in range(1, 6):
-                fpath = os.path.join(DEFAULT_DATA_DIR, "cifar-10-batches-py", 'data_batch_' + str(i))
+                fpath = os.path.join(self.dir_, "cifar-10-batches-py", 'data_batch_' + str(i))
                 (x_train[(i - 1) * 10000:i * 10000, :, :, :],
                  y_train[(i - 1) * 10000:i * 10000]) = self._load_batch(fpath)
-            fpath = os.path.join(DEFAULT_DATA_DIR, "cifar-10-batches-py", 'test_batch')
+            fpath = os.path.join(self.dir_, "cifar-10-batches-py", 'test_batch')
         else:
-            x_train[:], y_train[:] = self._load_batch(os.path.join(DEFAULT_DATA_DIR, "cifar-100-python", 'train'))
-            fpath = os.path.join(DEFAULT_DATA_DIR, "cifar-100-python", 'test')
+            x_train[:], y_train[:] = self._load_batch(os.path.join(self.dir_, "cifar-100-python", 'train'))
+            fpath = os.path.join(self.dir_, "cifar-100-python", 'test')
 
         x_test, y_test = self._load_batch(fpath)
 
@@ -299,7 +299,7 @@ class CIFAR:
         y_test = y_test.astype(y_train.dtype)
 
         if not keep_tmp:
-            shutil.rmtree(DEFAULT_DATA_DIR)
+            shutil.rmtree(self.dir_)
         return (x_train, y_train), (x_test, y_test)
 
 
