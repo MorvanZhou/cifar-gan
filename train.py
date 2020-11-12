@@ -16,7 +16,7 @@ parser.add_argument("-z", "--latent_dim", dest="latent_dim", default=128, type=i
 parser.add_argument("-l", "--label_dim", dest="label_dim", default=10, type=int)
 parser.add_argument("-b", "--batch_size", dest="batch_size", default=64, type=int)
 parser.add_argument("-e", "--epoch", dest="epoch", default=201, type=int)
-parser.add_argument("--soft_gpu", dest="soft_gpu", action="store_true", default=True)
+parser.add_argument("--soft_gpu", dest="soft_gpu", action="store_true", default=False)
 parser.add_argument("--lambda", dest="lambda_", default=10, type=float)
 parser.add_argument("--d_loop", dest="d_loop", default=1, type=int)
 parser.add_argument("-lr", "--learning_rate", dest="lr", default=0.0002, type=float)
